@@ -1,8 +1,15 @@
 /**
- * demo
+ * @file pmd.c
+ * @author your name (you@domain.com)
+ * @brief
+ * @version 0.1
+ * @date 2023-01-18
+ *
+ * @copyright Copyright (c) 2023
+ *
  */
-
 #include <stdio.h>
+#include <sys/times.h>
 
 #include <rte_memory.h>
 #include <rte_memzone.h>
@@ -21,17 +28,23 @@
 #include <rte_ip.h>
 #include <rte_hash.h>
 #include <rte_rcu_qsbr.h>
-#include <sys/times.h>
-#include  <rte_mbuf.h>
+#include <rte_mbuf.h>
+#include <rte_ethdev.h>
 
-#define NUM_QUEUE 1
-#define NUM_DESC 1024
-#define NUM_MBUFS 8191
+#define NUM_QUEUE 1            //每个网口收报队列个数
+#define NUM_DESC 1024          //每个网口描述符个数
+#define NUM_MBUFS 8191         //每个网口收包缓存个数
 #define MBUF_CACHE_SIZE 250
-#define NUM_BURST 32
-#define QUEUE_MAX 32
-#define THREAD_MAX 32
+#define NUM_BURST 32           //网口每次收包个数
+#define MTU       1500
 
+#define QUEUE_MAX 32           //队列最大个数 
+#define THREAD_MAX 32          //报文最大个数
+
+/**
+ * @brief
+ *
+ */
 typedef struct ST_PMD_CFG
 {
     uint32_t core_num;
@@ -41,9 +54,13 @@ typedef struct ST_PMD_CFG
     uint32_t desc_num;
     uint32_t brust_num;
     uint32_t queue_all;
-
+    uint32_t mtu;
 } ST_PMD_CFG;
 
+/**
+ * @brief 线程参数
+ *
+ */
 typedef struct ST_TH_PARAM
 {
     uint16_t p_id;
@@ -55,6 +72,10 @@ typedef struct ST_TH_PARAM
 ST_PMD_CFG g_cfg;
 ST_TH_PARAM g_th_param[QUEUE_MAX];
 
+/**
+ * @brief 网口初始化
+ *
+ */
 void port_init(void)
 {
     int retval;
@@ -116,6 +137,11 @@ void port_init(void)
 
         rte_eth_tx_queue_setup(portid, 0, nb_txd, rte_eth_dev_socket_id(portid), NULL);
 
+        ret = rte_eth_dev_set_mtu(portid, g_cfg.mtu); //设置MTU
+        if(ret != 0)
+        {
+            rte_exit(EXIT_FAILURE, "fail to set mtu (port %hu)\n", portid);
+        }
         /* Starting Ethernet port. 8< */
         retval = rte_eth_dev_start(portid); // 启动网口
         /* >8 End of starting of ethernet port. */
@@ -132,6 +158,12 @@ void port_init(void)
     }
 }
 
+/**
+ * @brief
+ *
+ * @param arg
+ * @return int32_t
+ */
 int32_t lcore_rcv(void *arg)
 {
     PST_TH_PARAM param = (PST_TH_PARAM)arg;
@@ -165,6 +197,10 @@ int32_t lcore_rcv(void *arg)
     return 0;
 }
 
+/**
+ * @brief
+ *
+ */
 void show(void)
 {
 #define TIMES 10 //默认打印记录10次
@@ -205,6 +241,13 @@ void usage(void)
     printf("usage:\n");
 }
 
+/**
+ * @brief
+ *
+ * @param argc
+ * @param argv
+ * @return int
+ */
 int main(int argc, char **argv)
 {
     int ret = rte_eal_init(argc, argv);
@@ -214,27 +257,27 @@ int main(int argc, char **argv)
         printf("init eal\n");
     argc -= ret;
     argv += ret;
-    // uint32_t socket_id = rte_socket_id();
 
-    g_cfg.core_num = rte_lcore_count();
+    g_cfg.core_num = rte_lcore_count(); //获取逻辑核数
     if(g_cfg.core_num < 2)
     {
         rte_exit(EXIT_FAILURE, "need 2 core\n");
     }
 
-    g_cfg.port_num = rte_eth_dev_count_avail();
+    g_cfg.port_num = rte_eth_dev_count_avail(); //获取网口数
     if(g_cfg.port_num == 0)
     {
         rte_exit(EXIT_FAILURE, "no port available\n");
     }
 
-    if(argc == 1)
+    if(argc == 1) //默认参数
     {
         g_cfg.queue_num = NUM_QUEUE;
         g_cfg.mbuf_num = NUM_MBUFS;
         g_cfg.desc_num = NUM_DESC;
         g_cfg.brust_num = NUM_BURST;
         g_cfg.queue_all = 0;
+        g_cfg.mtu = MTU;
     }
     else if(argc == 5)
     {
@@ -243,6 +286,16 @@ int main(int argc, char **argv)
         g_cfg.desc_num = atoi(argv[3]);
         g_cfg.brust_num = atoi(argv[4]);
         g_cfg.queue_all = 0;
+        g_cfg.mtu = MTU;
+    }
+    else if(argc == 6)
+    {
+        g_cfg.queue_num = atoi(argv[1]);
+        g_cfg.mbuf_num = atoi(argv[2]);
+        g_cfg.desc_num = atoi(argv[3]);
+        g_cfg.brust_num = atoi(argv[4]);
+        g_cfg.queue_all = 0;
+        g_cfg.mtu = atoi(argv[5]);
     }
     else
     {
@@ -250,7 +303,7 @@ int main(int argc, char **argv)
         goto end;
     }
 
-    port_init();
+    port_init(); //网口初始化
 
     uint32_t lcore_id;
     uint16_t p_id = 0;
