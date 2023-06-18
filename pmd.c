@@ -204,7 +204,7 @@ int32_t lcore_rcv(void *arg)
 void show(void)
 {
 #define TIMES 10 //默认打印记录10次
-    uint64_t g_stat[QUEUE_MAX][TIMES][2] = {0};
+    uint64_t g_stat[QUEUE_MAX][2] = {0};
     uint32_t i = 0;
     uint32_t t = 0;
 
@@ -222,17 +222,16 @@ void show(void)
         rte_delay_ms(1000);
         for(i = 0; i < g_cfg.queue_all; i++)
         {
-            g_stat[i][t][0] = rte_atomic64_read(&g_th_param[i].pps);
+            g_stat[i][0] = rte_atomic64_read(&g_th_param[i].pps);
             rte_atomic64_clear(&g_th_param[i].pps);
-            g_stat[i][t][1] = rte_atomic64_read(&g_th_param[i].bps);
+            g_stat[i][1] = rte_atomic64_read(&g_th_param[i].bps);
             rte_atomic64_clear(&g_th_param[i].bps);
         }
 
         for(i = 0; i < g_cfg.queue_all; i++)
         {
-            printf("%15lu %15lu\n", g_stat[i][t][0], g_stat[0][t][1]);
+            printf("p%02q%02 pps:%15lu bps:%15lu\n", i/g_cfg.queue_num, i%queue_num, g_stat[i][0], g_stat[i][1]);
         }
-        t = (t + 1) % TIMES;
     }
 }
 
