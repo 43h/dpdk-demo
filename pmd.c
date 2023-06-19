@@ -137,7 +137,7 @@ void port_init(void)
 
         rte_eth_tx_queue_setup(portid, 0, nb_txd, rte_eth_dev_socket_id(portid), NULL);
 
-        ret = rte_eth_dev_set_mtu(portid, g_cfg.mtu); //设置MTU
+        int32_t ret = rte_eth_dev_set_mtu(portid, g_cfg.mtu); //设置MTU
         if(ret != 0)
         {
             rte_exit(EXIT_FAILURE, "fail to set mtu (port %hu)\n", portid);
@@ -229,7 +229,7 @@ void show(void)
 
         for(i = 0; i < g_cfg.queue_all; i++)
         {
-            printf("p%02q%02 pps:%15lu bps:%15lu\n", i/g_cfg.queue_num, i%g_cfg.queue_num, g_stat[i][0], g_stat[i][1]);
+            printf("p%02huq%02hu pps:%15lu bps:%15lu\n", i/g_cfg.queue_num, i%g_cfg.queue_num, g_stat[i][0], g_stat[i][1]);
         }
     }
 }
