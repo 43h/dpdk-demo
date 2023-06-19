@@ -203,7 +203,6 @@ int32_t lcore_rcv(void *arg)
  */
 void show(void)
 {
-#define TIMES 10 //默认打印记录10次
     uint64_t g_stat[QUEUE_MAX][2] = {0};
     uint32_t i = 0;
     uint32_t t = 0;
@@ -230,7 +229,7 @@ void show(void)
 
         for(i = 0; i < g_cfg.queue_all; i++)
         {
-            printf("p%02q%02 pps:%15lu bps:%15lu\n", i/g_cfg.queue_num, i%queue_num, g_stat[i][0], g_stat[i][1]);
+            printf("p%02q%02 pps:%15lu bps:%15lu\n", i/g_cfg.queue_num, i%g_cfg.queue_num, g_stat[i][0], g_stat[i][1]);
         }
     }
 }
